@@ -25,7 +25,7 @@ print("드라이버 세팅 완료");
 
 #login하기 
 userId = "아이디"
-userPw = ""
+userPw = "비밀번호"
 idField = driver.find_element_by_xpath('//*[@id="loginForm"]/div/div[1]/div/label/input')
 pwField = driver.find_element_by_xpath('//*[@id="loginForm"]/div/div[2]/div/label/input')
 idField.send_keys(userId)
@@ -64,11 +64,20 @@ for idx in range(3):
 	html = driver.page_source
 	soup = BeautifulSoup(html, "html.parser")
 	date = soup.select_one("div.k_Q0X time")["datetime"]
-	body = soup.select_one("ul.XQXOT > div:nth-child(1) span:nth-child(2)").text
+	try:
+		body = soup.select_one("ul.XQXOT > div:nth-child(1) span:nth-child(2)").text
+	except: 
+		body = "";
 	comment = []
 	for c in soup.select("ul.Mr508 div.C4VMK span:nth-child(2)"):
-		comment.append(c.text)
-	like = soup.select_one("div.Nm9Fw span").get_text()
+		try:	
+			comment.append(c.text)
+		except: 
+			comment.append("")
+	try:	
+		like = soup.select_one("div.Nm9Fw span")
+	except:
+		like = ""
 
 	idxs.append(idx)
 	dates.append(date)
@@ -76,7 +85,7 @@ for idx in range(3):
 	comments.append(comment)
 	likes.append(like)
 		
-	#print("idx: ", idx);
+	print(idx);
 	#print("date: ", date);
 	#print("body: ", body);
 	#print("comment: ", comment);
