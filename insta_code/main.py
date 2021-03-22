@@ -25,7 +25,7 @@ print("드라이버 세팅 완료");
 
 #login하기 
 userId = "아이디"
-userPw = "luckyone77!"
+userPw = ""
 idField = driver.find_element_by_xpath('//*[@id="loginForm"]/div/div[1]/div/label/input')
 pwField = driver.find_element_by_xpath('//*[@id="loginForm"]/div/div[2]/div/label/input')
 idField.send_keys(userId)
