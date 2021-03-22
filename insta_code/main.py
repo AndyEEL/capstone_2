@@ -68,7 +68,7 @@ for idx in range(3):
 	comment = []
 	for c in soup.select("ul.Mr508 div.C4VMK span:nth-child(2)"):
 		comment.append(c.text)
-	like = soup.select_one("div.Nm9Fw span").text
+	like = soup.select_one("div.Nm9Fw span").get_text()
 
 	idxs.append(idx)
 	dates.append(date)
