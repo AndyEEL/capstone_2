@@ -25,8 +25,8 @@ time.sleep(5);
 print("드라이버 세팅 완료");
 
 #login하기 
-userId = "insta_dev121"
-userPw = "pp4854839$"
+userId = "아이디"
+userPw = "비밀번호"
 idField = driver.find_element_by_xpath('//*[@id="loginForm"]/div/div[1]/div/label/input')
 pwField = driver.find_element_by_xpath('//*[@id="loginForm"]/div/div[2]/div/label/input')
 idField.send_keys(userId)
