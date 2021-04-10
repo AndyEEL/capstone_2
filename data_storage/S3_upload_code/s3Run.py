@@ -22,8 +22,12 @@ class s3Service:
 
     def listingFiles(self):
         response = self.session.resource('s3')
+        resource = boto3.resource('s3', region_name = 'ap-northeast-2', verify = False)
+        bucket = resource.Bucket('capstone-khu')
 
-        for bucket in response.buckets.all():
-            print(bucket.name)
+        #for bucket in response.buckets.all():
+        #    print(bucket.name)
 
+        for files in bucket.objects:
+            print(files)
 
