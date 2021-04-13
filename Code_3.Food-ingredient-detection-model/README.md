@@ -6,6 +6,7 @@
 ## Dataset
 
 - large-scale dataset ISIA Food-500 with 399,726 images and 500 categories
+<img width="603" alt="_2021-04-10__7 12 45" src="https://user-images.githubusercontent.com/74975256/114573481-5f7c6900-9cb3-11eb-901e-601fc61e44f0.png">
 
 
 **이미지 전처리에 관한 부분은은 논문을 참고**
@@ -18,11 +19,16 @@ feature은 image file - label의 형태로 이루어져있음.
 
 ## Outputs(y)(output)
 
+<img width="657" alt="_2021-04-12__8 01 01" src="https://user-images.githubusercontent.com/74975256/114573585-758a2980-9cb3-11eb-96f0-16632cabe5f6.png">
+
+<img width="668" alt="_2021-04-12__8 02 29" src="https://user-images.githubusercontent.com/74975256/114573601-79b64700-9cb3-11eb-855d-cdcc588984bc.png">
+<img width="676" alt="_2021-04-12__8 03 59" src="https://user-images.githubusercontent.com/74975256/114573606-7ae77400-9cb3-11eb-8783-73ed982e958f.png">
 
 ## Model(hypothesis)
 
 ### 모델 구조
 
+<img width="662" alt="_2021-04-10__10 04 27" src="https://user-images.githubusercontent.com/74975256/114573640-8175eb80-9cb3-11eb-9c00-d99b84284d32.png">
 
 ## 사용된 Networks
 
@@ -58,6 +64,8 @@ feature은 image file - label의 형태로 이루어져있음.
 
 - combination of both spatial and channel attention can capture discriminative features comprehensively from different dimensions
 
+<img width="642" alt="_2021-04-10__9 58 47" src="https://user-images.githubusercontent.com/74975256/114573727-96527f00-9cb3-11eb-9b6d-7342e588eeb9.png">
+
 
 ## Cost functions(비용함수)
 
@@ -66,6 +74,7 @@ feature은 image file - label의 형태로 이루어져있음.
     trained with different types of losses in an end-to-end fashion to maximize their complementary effect in terms of discriminative power.
 
 - Jointly optimized by three types of losses (joint / global / local loss )
+<img width="276" alt="_2021-04-10__10 06 01" src="https://user-images.githubusercontent.com/74975256/114573773-a0747d80-9cb3-11eb-9262-1e90fd7bed97.png">
 
 ## optimization methods
 
@@ -84,17 +93,16 @@ feature은 image file - label의 형태로 이루어져있음.
 
 일반적으로 생각하는 Convolution layer는 필터가 움직이면서 해당하는 입력 부분과 곱/합 연산을 수행하고, 활성화함수를 거쳐 결과를 만들어냄. 만약 데이터의 분포가 저러한 선형 관계로 표현될 수 없는 비선형적인 관계라면 비선형적 관계를 표현할 수 있도록, 단순한 곱/합 연산이 아니라 Multi Layer Perceptron, 즉 MLP를 중간에 넣음
 
+<img width="687" alt="_2021-04-10__10 18 32" src="https://user-images.githubusercontent.com/74975256/114573812-ac603f80-9cb3-11eb-8788-4626cbe1bf4c.png">
+<img width="697" alt="_2021-04-10__10 18 50" src="https://user-images.githubusercontent.com/74975256/114573844-b4b87a80-9cb3-11eb-8a33-a3af26c40bff.png">
 
 MLP Conv를 세 개 쌓고, 마지막에 Fully-Connected Layer를 넣는 대신 **Global Average Pooling**을 넣었습니다. 이는 오버피팅을 방지하는 효과 있음.
 
 ### Attention layer
 
 [200214_강현규_Visual_Attention_세미나_자료.pdf.zip](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/200214__Visual_Attention__.pdf.zip)
+(출처 : http://dmqm.korea.ac.kr/activity/seminar/280)
 
 ### What is SEnet
 
 [https://bskyvision.com/640](https://bskyvision.com/640)
-
-\
-
-SGLAnet = SEnet + AGG16
