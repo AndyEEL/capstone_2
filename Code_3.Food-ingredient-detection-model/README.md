@@ -2,15 +2,11 @@
 
 > [논문 링크](https://arxiv.org/pdf/2008.05655.pdf)
 
-> 코드 다운로드
-
-[Code_3.Food-ingredient-detection-model.zip](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/Code_3.Food-ingredient-detection-model.zip)
 
 ## Dataset
 
-- large-scale dataset ISIA Food-500 with 399,726 images and 500 cat- egories
+- large-scale dataset ISIA Food-500 with 399,726 images and 500 categories
 
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__7.12.45.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__7.12.45.png)
 
 **이미지 전처리에 관한 부분은은 논문을 참고**
 
@@ -22,19 +18,11 @@ feature은 image file - label의 형태로 이루어져있음.
 
 ## Outputs(y)(output)
 
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-12__8.03.59.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-12__8.03.59.png)
-
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-12__8.01.01.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-12__8.01.01.png)
-
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-12__8.02.29.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-12__8.02.29.png)
 
 ## Model(hypothesis)
 
 ### 모델 구조
 
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.04.27.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.04.27.png)
-
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.04.52.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.04.52.png)
 
 ## 사용된 Networks
 
@@ -70,7 +58,6 @@ feature은 image file - label의 형태로 이루어져있음.
 
 - combination of both spatial and channel attention can capture discriminative features comprehensively from different dimensions
 
-    ![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__9.58.47.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__9.58.47.png)
 
 ## Cost functions(비용함수)
 
@@ -79,10 +66,6 @@ feature은 image file - label의 형태로 이루어져있음.
     trained with different types of losses in an end-to-end fashion to maximize their complementary effect in terms of discriminative power.
 
 - Jointly optimized by three types of losses (joint / global / local loss )
-
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.06.18.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.06.18.png)
-
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.06.01.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.06.01.png)
 
 ## optimization methods
 
@@ -101,9 +84,6 @@ feature은 image file - label의 형태로 이루어져있음.
 
 일반적으로 생각하는 Convolution layer는 필터가 움직이면서 해당하는 입력 부분과 곱/합 연산을 수행하고, 활성화함수를 거쳐 결과를 만들어냄. 만약 데이터의 분포가 저러한 선형 관계로 표현될 수 없는 비선형적인 관계라면 비선형적 관계를 표현할 수 있도록, 단순한 곱/합 연산이 아니라 Multi Layer Perceptron, 즉 MLP를 중간에 넣음
 
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.18.32.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.18.32.png)
-
-![CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.18.50.png](CNN%20description%20b7bae84f33fa4cb0aa9e41721bc5dea4/_2021-04-10__10.18.50.png)
 
 MLP Conv를 세 개 쌓고, 마지막에 Fully-Connected Layer를 넣는 대신 **Global Average Pooling**을 넣었습니다. 이는 오버피팅을 방지하는 효과 있음.
 
