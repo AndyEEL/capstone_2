@@ -221,8 +221,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
     batch_time = AverageMeter() ## bach_time, date_time, losses, top1, top5의 현재 값 및 평균, 합, 카운트 저장
     data_time = AverageMeter()
     losses = AverageMeter()
-    top1 = AverageMeter()
-    top5 = AverageMeter()
+    top1 = AverageMeter() ## top1: 에러율이 가장 높은 클래스 한개
+    top5 = AverageMeter() ## top5: 에러율이 가장 낮은 클래스 다섯개, 일반적인 CNN 분류 척도
 
     # switch to train mode
     model.train()
@@ -256,7 +256,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         top5.update(prec5.item(), input.size(0))
 
         # compute gradient and do SGD step
-        optimizer.zero_grad()
+        optimizer.zero_grad() ## Zero Gradient로 초기화 시켜야 에러가 발생하지 않음
         loss.backward()
         optimizer.step()
 
