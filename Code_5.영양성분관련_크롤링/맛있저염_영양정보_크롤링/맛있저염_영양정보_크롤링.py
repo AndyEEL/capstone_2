@@ -9,16 +9,11 @@ import pandas as pd
 # information variable
 sex_info = {"male" : "male"} # original : {"male" : "male", "female" : "female"}
 relationship_info = {"self" : "self", "wife" : "wife", "children" : "children", "parent" : "parent", "else" : "else"}
-birth_year_info = [i for i in range(1962,1993)] #현재 30대 ~50대로 한정되어있습니다.
+birth_year_info = [i for i in range(1973,1993)] #현재 30대 ~50대로 한정되어있습니다.
 height_info = [i for i in range(140, 191)]
 weight_info = [i for i in range(40,121)]
 diagnosis = True # default : 질환자
-kidney_status_info = {"1to3" : "1to3", "4to5" : "4to5", "in_dialysis" : "in_dialysis", "unknown" : "unknown"}
-Try_count = 0
-Cr_range = [0.0]# contain 크레아티닌 수치 기준점
-Check_Cr_range = True
-NOTCheck_Cr_range = False
-find_cr_rate = False
+kidney_status_info = {"1to3":"1to3","4to5" : "4to5", "in_dialysis" : "in_dialysis", "unknown" : "unknown"}
 
 ''' -------------- '''
 
@@ -127,10 +122,10 @@ def inputInfo(driver, relationship, sex, birth_year, height, weight, diagnosis, 
             if find_cr_rate: #크레아티닌 수치 구할땐 여기서 return
                 return status
 
-            if kidney_status != "in_dialysis" or kidney_status != "unknown":
+            if kidney_status != "in_dialysis" and kidney_status != "unknown":
 
                 #크레아티닌 수치 입력
-                if Cr_rate >= 0:
+                if Cr_rate > 0:
                    driver.find_element_by_xpath(creatinine_path).clear()
                    driver.find_element_by_xpath(creatinine_path).click()
                    driver.find_element_by_xpath(creatinine_path).send_keys(str(round(Cr_rate,1)))
@@ -225,14 +220,14 @@ def goBackInfo(driver, Try_count, table_dict, info_error_msg_list):
         driver.find_element_by_xpath(go_back_button).click()
         driver.implicitly_wait(3)
     except:
-        print(f"건강정보 페이지 돌아가기 실패. driver 재시작. 시도 : {Try_count}(6되면 멈춥니다.)")
+        print(f"건강정보 페이지 돌아가기 실패. driver 재시작. 시도 : {Try_count}(10되면 멈춥니다.)")
         fileSave(table_dict, info_error_msg_list)
         try:
             driver.close()
         except:
             pass
-        time.sleep(5)
-        if Try_count > 5:
+        time.sleep(3)
+        if Try_count > 9:
             print("지속적인 문제가 있어 저장 후 프로그램을 종료합니다.")
             fileSave(table_dict, info_error_msg_list)
             driver.close()
@@ -243,57 +238,110 @@ def goBackInfo(driver, Try_count, table_dict, info_error_msg_list):
     return False
 
 
-def FindCrRateRange(driver, kidney_status, Cr_range,relationship, sex, birth_year, height, weight, diagnosis, info_error_msg_list):
+def FindCrRateRange(driver, kidney_status, Cr_range,relationship, sex, birth_year, height, weight, diagnosis, GFR_Cr_dict, info_error_msg_list):
 
     creatinine_path = '//*[@id="__next"]/div[2]/div/div[2]/div[2]/form/div[6]/div[4]/div[1]/div/input'
-    min = 0
-    max = 0
     Find_rate = True
     print("크레아티닌 수치 범위 기준점 파악중...")
     try:
         inputInfo(driver, relationship, sex, birth_year, height, weight, diagnosis,kidney_status,0, info_error_msg_list, Find_rate)
 
-        for Cr_rate in np.arange(6.5, 0.4, step= -0.1):
+        for Cr_rate in np.arange(0.5, 6.6, step= 0.1):
+            start = time.time()
             driver.find_element_by_xpath(creatinine_path).click()
             driver.find_element_by_xpath(creatinine_path).send_keys(str(Cr_rate))
             GFR_ = driver.find_element_by_xpath('//*[@id="__next"]/div[2]/div/div[2]/div[2]/form/div[6]/div[4]/div[2]/div/span').text
             GFR_ = GFR_[:-1]
 
-            if float(GFR_) <= 30.:  # 기준치까지 update
-               Cr_range[0] = Cr_rate
-            else:
-                break
+            GFR_Cr_dict[round(Cr_rate,1)] = float(GFR_) #GFR 딕셔너리에 추가
+
+            if kidney_status == "1to3":
+                if float(GFR_) >= 30.:  # 기준치까지 update
+                    Cr_range[0] = Cr_rate
+
+            if kidney_status == "4to5":
+
+                if float(GFR_) >= 30.:  # 기준치까지 update
+                   Cr_range[0] = round(Cr_rate,1)
+                   if float(GFR_) >= 60.:
+                       Cr_range[1] = round(Cr_rate,1)
 
             driver.find_element_by_xpath(creatinine_path).clear()
+            time_check = time.time() - start
+            print("range check time : ", time_check)
+
+            if time_check > 1:
+                try:
+                    print("속도를 위해 리부트합니다. ")
+                    driver.close()
+                except:
+                    pass
+                
+                driver = pageInit()
+                inputInfo(driver, relationship, sex, birth_year, height, weight, diagnosis,kidney_status,0, info_error_msg_list, Find_rate)
+
+                
     except:
         print("Cr range Error 발생. default값으로 진행합니다. ")
         if kidney_status == "1to3":
             Cr_range[0] = 0.0
         elif kidney_status == "4to5":
             Cr_range[0] = 6.5
+            Cr_range[1] = 0.5
 
+def CheckSimilarity(driver ,Cr_range, creatinine_path):
+    '''
+    직전 기준치와 같은지 검사
+    :param driver: driver
+    :param Cr_range: 크레아티닌 수치
+    :param creatinine_path: 크레아티닌 입력 경로
+    :return: Boolean
+    '''
+    driver.find_element_by_xpath(creatinine_path).clear()
 
+    # 30% 기준
+    driver.find_element_by_xpath(creatinine_path).click()
+    driver.find_element_by_xpath(creatinine_path).send_keys(str(Cr_range[0]))
+    GFR30 = driver.find_element_by_xpath('//*[@id="__next"]/div[2]/div/div[2]/div[2]/form/div[6]/div[4]/div[2]/div/span').text
+    GFR30 = GFR30[:-1]
+
+    driver.find_element_by_xpath(creatinine_path).clear()
+
+    # 60% 기준
+    driver.find_element_by_xpath(creatinine_path).click()
+    driver.find_element_by_xpath(creatinine_path).send_keys(str(Cr_range[1]))
+    GFR60 = driver.find_element_by_xpath('//*[@id="__next"]/div[2]/div/div[2]/div[2]/form/div[6]/div[4]/div[2]/div/span').text
+    GFR60 = GFR60[:-1]
+
+    if abs(float(GFR30) - 30.0) < 1:
+        if abs(float(GFR60) - 60.0) < 1:
+            return True
+    else:
+        return False
 
 
 ''' ----- main ----- '''
 
 
-'''
+
 ## test case
+'''
 sex_info = {"male" : "male"}
 relationship_info = {"self" : "self"}
 birth_year_info = [1975]
 height_info = [150]
 weight_info = [50]
 diagnosis = True # default : 일반 사용자
-kidney_status_info = { "4to5":"4to5","unknown": "unknown"}
+kidney_status_info = { "1to3" : "1to3","in_dialysis" : "in_dialysis", "unknown" : "unknown"}
 Try_count = 0
-Cr_range = [0.0]# contain 크레아티닌 수치 기준점
+Cr_range = [0.0,0.0]# contain 크레아티닌 수치 기준점
 Check_Cr_range = True
 NOTCheck_Cr_range = False
 find_cr_rate = False
+GFR_Cr_dict = {}
 '''
-#list variable
+
+# other variable
 info_error_msg_list = []
 table_dict = {
     "sex" : [],
@@ -312,6 +360,13 @@ table_dict = {
     "protein": [],
     "phosphorus": []
 }
+Try_count = 0
+Cr_range = [0.0, 0.0]# contain 크레아티닌 수치 기준점 [30%기준점, 60% 기준점]
+Check_Cr_range = True
+NOTCheck_Cr_range = False
+find_cr_rate = False
+GFR_Cr_dict = {}
+
 
 ''' --- run --- '''
 driver = pageInit()
@@ -346,10 +401,11 @@ if diagnosis == False: #일반 저염식 사용자
                                 table_dict["natrium"].append(ingredient_list["natrium"])
                                 table_dict["protein"].append(ingredient_list["protein"])
                                 table_dict["phosphorus"].append(ingredient_list["phosphorus"])
-                            print("해당 정보 table에 저장 완료. ")
 
                         except:
                             print("크롤한 정보를 자료 저장하는데 실패. \n")
+
+                    print("해당 정보 table에 저장 완료. ")
 
                     # 정보 입력 page로 돌아가기
                     is_restart = goBackInfo(driver, Try_count,table_dict,info_error_msg_list)
@@ -367,21 +423,23 @@ if diagnosis: #콩팥 질환자
             for kidney_status in kidney_status_info:
                 #키
                 for height in height_info:
-                    # 몸무게
-                    for weight in weight_info:
-                        # 크레아티닌 수치
-                        if kidney_status == "1to3":
-                            FindCrRateRange(driver, kidney_status, Cr_range,"self", sex, birth_year, height, weight, diagnosis, info_error_msg_list) # Cr range를 업데이트
-                            for Cr_rate in np.arange(6.5, round(Cr_range[0],1), -0.1):
-                                 status_list = inputInfo(driver, "self", sex, birth_year, height, weight, diagnosis, kidney_status, Cr_rate, info_error_msg_list,find_cr_rate)
-                                 ingredient_list = crawlGuidance(driver)
-                                 try:
-                                     # 예외 발생시
-                                     if "fail" in ingredient_list.keys():
-                                         info_error_msg_list.append(f"{birth_year},{sex},{height},{weight},{diagnosis},-\n")
+                    if kidney_status == "1to3":
+                        default_weight = 50
+                        default_Cr_range = (6.5 - round(Cr_range[0], 1)) / 2
+                        FindCrRateRange(driver, kidney_status, Cr_range,"self", sex, birth_year, height, default_weight, diagnosis,GFR_Cr_dict, info_error_msg_list) # Cr range를 업데이트
+                        status_list = inputInfo(driver, "self", sex, birth_year, height, default_weight, diagnosis, kidney_status, default_Cr_range, info_error_msg_list,find_cr_rate)
+                        ingredient_list = crawlGuidance(driver)
+                        try:
+                             # 예외 발생시
+                             if "fail" in ingredient_list.keys():
+                                 info_error_msg_list.append(f"{birth_year},{sex},{height},{weight},{diagnosis},-\n")
 
-                                     # 크롤 정상적으로 진행시
-                                     else:
+                             # 크롤 정상적으로 진행시
+                             else:
+                                 #
+                                 for weight in weight_info:
+                                     # 크레아티닌 수치
+                                     for Cr_rate in np.arange(6.5, round(Cr_range[0], 1), -0.1):
 
                                          table_dict["sex"].append(sex)
                                          table_dict["relationship"].append("self")
@@ -389,8 +447,8 @@ if diagnosis: #콩팥 질환자
                                          table_dict["height"].append(height)
                                          table_dict["weight"].append(weight)
                                          table_dict["kidney_status"].append(kidney_status)
-                                         table_dict["Cr_rate"].append(Cr_rate)
-                                         table_dict["GFR"].append(status_list["GFR"])
+                                         table_dict["Cr_rate"].append(round(Cr_rate,1))
+                                         table_dict["GFR"].append(GFR_Cr_dict[round(Cr_rate,1)])
                                          table_dict["diagnosis"].append(diagnosis)
                                          table_dict["kcal"].append(ingredient_list["kcal"])
                                          table_dict["carbo"].append(ingredient_list["carbo"])
@@ -399,38 +457,43 @@ if diagnosis: #콩팥 질환자
                                          table_dict["protein"].append(ingredient_list["protein"])
                                          table_dict["phosphorus"].append(ingredient_list["phosphorus"])
 
-                                         print("해당 정보 table에 저장 완료. ")
-                                 except:
-                                     print("크롤한 정보를 자료 저장하는데 실패. \n")
+                                 print("해당 정보 table에 저장 완료. ")
+                        except:
+                             print("크롤한 정보를 자료 저장하는데 실패. \n")
 
-                                 # 정보 입력 page로 돌아가기
-                                 is_restart = goBackInfo(driver, Try_count, table_dict, info_error_msg_list)
-                                 # 만약 오류가 생겼을경우
-                                 if is_restart:
-                                     driver = pageInit()
-                                     Try_count = Try_count + 1
+                        # 정보 입력 page로 돌아가기
+                        is_restart = goBackInfo(driver, Try_count, table_dict, info_error_msg_list)
+                        # 만약 오류가 생겼을경우
+                        if is_restart:
+                             driver = pageInit()
+                             Try_count = Try_count + 1
 
 
-                        elif kidney_status == "4to5":
-                            FindCrRateRange(driver, kidney_status, Cr_range,"self", sex, birth_year, height, weight, diagnosis, info_error_msg_list) # Cr range를 업데이트
-                            for Cr_rate in np.arange(round(Cr_range[0],1), 0.0,-0.1):
-                                status_list = inputInfo(driver, "self", sex, birth_year, height, weight,
-                                                        diagnosis, kidney_status, Cr_rate, info_error_msg_list,find_cr_rate)
-                                ingredient_list = crawlGuidance(driver)
-                                try:
-                                    # 예외 발생시 저장
-                                    if "fail" in ingredient_list.keys():
-                                        info_error_msg_list.append(f"{birth_year},{sex},{height},{weight},{diagnosis},-\n")
-                                    # 크롤 정상적으로 진행시
-                                    else:
+                    elif kidney_status == "4to5":
+                        default_weight = 50
+                        FindCrRateRange(driver, kidney_status, Cr_range,"self", sex, birth_year, height, default_weight, diagnosis,GFR_Cr_dict, info_error_msg_list) # Cr range를 업데이트
+                        # 30 ~60%까지 수행
+                        default_Cr_range = Cr_range[0] - 0.1
+                        status_list = inputInfo(driver, "self", sex, birth_year, height, default_weight,
+                                                diagnosis, kidney_status, default_Cr_range, info_error_msg_list,find_cr_rate)
+                        ingredient_list = crawlGuidance(driver)
+                        try:
+                            # 예외 발생시 저장
+                            if "fail" in ingredient_list.keys():
+                                info_error_msg_list.append(f"{birth_year},{sex},{height},{weight},{diagnosis},-\n")
+                            # 크롤 정상적으로 진행시
+                            else:
+                                for weight in weight_info:
+                                    for Cr_rate in np.arange(round(Cr_range[0], 1), round(Cr_range[1], 1) - 0.1, -0.1):
+
                                         table_dict["sex"].append(sex)
                                         table_dict["relationship"].append("self")
                                         table_dict["birth_Year"].append(birth_year)
                                         table_dict["height"].append(height)
                                         table_dict["weight"].append(weight)
                                         table_dict["kidney_status"].append(kidney_status)
-                                        table_dict["Cr_rate"].append(Cr_rate)
-                                        table_dict["GFR"].append(status_list["GFR"])
+                                        table_dict["Cr_rate"].append(round(Cr_rate, 1))
+                                        table_dict["GFR"].append(GFR_Cr_dict[round(Cr_rate, 1)])
                                         table_dict["diagnosis"].append(diagnosis)
                                         table_dict["kcal"].append(ingredient_list["kcal"])
                                         table_dict["carbo"].append(ingredient_list["carbo"])
@@ -439,23 +502,64 @@ if diagnosis: #콩팥 질환자
                                         table_dict["protein"].append(ingredient_list["protein"])
                                         table_dict["phosphorus"].append(ingredient_list["phosphorus"])
 
-                                        print("해당 정보 table에 저장 완료. ")
-                                except:
-                                    print("크롤한 정보를 자료 저장하는데 실패. \n")
+                                print("해당 정보 table에 저장 완료. ")
+                        except:
+                            print("크롤한 정보를 자료 저장하는데 실패. \n")
 
-                                # 정보 입력 page로 돌아가기
-                                is_restart = goBackInfo(driver, Try_count, table_dict, info_error_msg_list)
-                                # 만약 오류가 생겼을경우
-                                if is_restart:
-                                    driver = pageInit()
-                                    Try_count = Try_count + 1
+                        is_restart = goBackInfo(driver, Try_count, table_dict, info_error_msg_list)
 
-                        else:
-                            find_cr_rate = False
-                            status_list = inputInfo(driver, "self", sex, birth_year, height, weight,
-                                                    diagnosis, kidney_status, 0, info_error_msg_list, find_cr_rate)
-                            ingredient_list = crawlGuidance(driver)
-                            try:
+                        #60% ~ 100%까지 수행
+                        default_Cr_range = Cr_range[1] - 0.1
+                        status_list = inputInfo(driver, "self", sex, birth_year, height, weight,
+                                                diagnosis, kidney_status, default_Cr_range, info_error_msg_list,
+                                                find_cr_rate)
+                        ingredient_list = crawlGuidance(driver)
+                        try:
+                            for weight in weight_info:
+                                for Cr_rate in np.arange(round(Cr_range[1], 1) - 0.1, 0.4, -0.1):  # 60%~ 끝까지 수행
+
+                                    # 예외 발생시 저장
+                                    if "fail" in ingredient_list.keys():
+                                        info_error_msg_list.append(
+                                            f"{birth_year},{sex},{height},{weight},{diagnosis},-\n")
+                                    # 크롤 정상적으로 진행시
+                                    else:
+                                        table_dict["sex"].append(sex)
+                                        table_dict["relationship"].append("self")
+                                        table_dict["birth_Year"].append(birth_year)
+                                        table_dict["height"].append(height)
+                                        table_dict["weight"].append(weight)
+                                        table_dict["kidney_status"].append(kidney_status)
+                                        table_dict["Cr_rate"].append(round(Cr_rate, 1))
+                                        table_dict["GFR"].append(GFR_Cr_dict[round(Cr_rate, 1)])
+                                        table_dict["diagnosis"].append(diagnosis)
+                                        table_dict["kcal"].append(ingredient_list["kcal"])
+                                        table_dict["carbo"].append(ingredient_list["carbo"])
+                                        table_dict["kalium"].append(ingredient_list["kalium"])
+                                        table_dict["natrium"].append(ingredient_list["natrium"])
+                                        table_dict["protein"].append(ingredient_list["protein"])
+                                        table_dict["phosphorus"].append(ingredient_list["phosphorus"])
+
+                            print("해당 정보 table에 저장 완료. ")
+                        except:
+                            print("크롤한 정보를 자료 저장하는데 실패. \n")
+
+                        # 정보 입력 page로 돌아가기
+                        is_restart = goBackInfo(driver, Try_count, table_dict, info_error_msg_list)
+                        # 만약 오류가 생겼을경우
+                        if is_restart:
+                            driver = pageInit()
+                            Try_count = Try_count + 1
+
+                    else:
+                        find_cr_rate = False
+                        default_weight = 40
+                        status_list = inputInfo(driver, "self", sex, birth_year, height, default_weight,
+                                                diagnosis, kidney_status, 0, info_error_msg_list,find_cr_rate)
+                        ingredient_list = crawlGuidance(driver)
+                        try:
+                            for weight in weight_info:
+
                                 # 예외 발생시 저장
                                 if "fail" in ingredient_list.keys():
                                     info_error_msg_list.append(f"{birth_year},{sex},{height},{weight},{diagnosis},-\n")
@@ -467,8 +571,8 @@ if diagnosis: #콩팥 질환자
                                     table_dict["height"].append(height)
                                     table_dict["weight"].append(weight)
                                     table_dict["kidney_status"].append(kidney_status)
-                                    table_dict["Cr_rate"].append(Cr_rate)
-                                    table_dict["GFR"].append(status_list["GFR"])
+                                    table_dict["Cr_rate"].append(0)
+                                    table_dict["GFR"].append(0)
                                     table_dict["diagnosis"].append(diagnosis)
                                     table_dict["kcal"].append(ingredient_list["kcal"])
                                     table_dict["carbo"].append(ingredient_list["carbo"])
@@ -477,16 +581,16 @@ if diagnosis: #콩팥 질환자
                                     table_dict["protein"].append(ingredient_list["protein"])
                                     table_dict["phosphorus"].append(ingredient_list["phosphorus"])
 
-                                    print("해당 정보 table에 저장 완료. ")
-                            except:
-                                print("크롤한 정보를 자료 저장하는데 실패. \n")
+                            print("해당 정보 table에 저장 완료. ")
+                        except:
+                            print("크롤한 정보를 자료 저장하는데 실패. \n")
 
-                            # 정보 입력 page로 돌아가기
-                            is_restart = goBackInfo(driver, Try_count, table_dict, info_error_msg_list)
-                            # 만약 오류가 생겼을경우
-                            if is_restart:
-                                driver = pageInit()
-                                Try_count = Try_count + 1
+                        # 정보 입력 page로 돌아가기
+                        is_restart = goBackInfo(driver, Try_count, table_dict, info_error_msg_list)
+                        # 만약 오류가 생겼을경우
+                        if is_restart:
+                            driver = pageInit()
+                            Try_count = Try_count + 1
 
 # 받아온거 파일 저장하기
 fileSave(table_dict, info_error_msg_list)
