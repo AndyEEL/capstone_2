@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
+
 #coding=utf-8
 #conda create -n python27 python=2.7 anaconda
 #source activate python27
 #source deactivate
 # https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/
-
 from __future__ import absolute_import
 from __future__ import division
 import torch
@@ -11,7 +12,6 @@ from torch import nn
 from torch.nn import functional as F
 import torchvision
 from senet import senet154
-
 
 class ConvBlock(nn.Module):
     """Basic convolutional block.
@@ -45,6 +45,7 @@ class InceptionA(nn.Module):
         mid_channels = out_channels // 4 # # of input feature block // num of filter block == out channel // 4
 
         # nn.sequential : A sequential container. Modules will be added to it in the order they are passed in the constructor.
+
         self.stream1 = nn.Sequential(
             ConvBlock(in_channels, mid_channels, 1),
             ConvBlock(mid_channels, mid_channels, 3, p=1), # matrix size 같게 하기 위해 kernel & p 설정
@@ -98,6 +99,7 @@ class InceptionB(nn.Module):
         s2 = self.stream2(x)
         s3 = self.stream3(x)
         y = torch.cat([s1, s2, s3], dim=1)
+
         return y
 
 '''
@@ -174,7 +176,6 @@ class SoftAttn(nn.Module):
         return y
         # What is returned is hwc
 
-
 '''
 The output is theta required by STN
 '''
@@ -222,7 +223,7 @@ class MODEL(nn.Module):
     '''
     the main model of cvper2020
     '''
-    def __init__(self, num_classes, senet154_weight, nchannels=[256,512,1024,2048], multi_scale = False ,learn_region=True, use_gpu=True):
+    def __init__(self, num_classes, senet154_weight, nchannels=[256,512,1024,2048], multi_scale = False ,learn_region=True, use_gpu=False):
         super(MODEL,self).__init__()
         self.learn_region=learn_region
         self.use_gpu = use_gpu
@@ -246,7 +247,7 @@ class MODEL(nn.Module):
 
 
         self.classifier_global =nn.Sequential(
-                                nn.Linear(2048*2, 2048), # To merge 4 areas into one, batchnormal 1d, and relu need to be added
+                                nn.Linear(2048*2, 2048),#nn.Linear(2048*2, 2048), # To merge 4 areas into one, batchnormal 1d, and relu need to be added
                                 nn.BatchNorm1d(2048),
                                 nn.ReLU(),
                                 nn.Dropout(0.2), #prevent overfitting
@@ -415,9 +416,9 @@ class MODEL(nn.Module):
         if self.learn_region:
             x_local_list = []
 
-            local_512 = torch.randn(batch_size, 4, 512).cuda()
-            local_1024 = torch.randn(batch_size, 4, 1024).cuda()
-            local_2048 = torch.randn(batch_size, 4, 2048).cuda()
+            local_512 = torch.randn(batch_size, 4, 512)
+            local_1024 = torch.randn(batch_size, 4, 1024)
+            local_2048 = torch.randn(batch_size, 4, 2048)
 
             for region_idx in range(4):
 
